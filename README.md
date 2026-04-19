@@ -112,6 +112,12 @@ chmod +x run.sh
 ./run.sh --log-file temp/scanner.log
 ```
 
+Без полноэкранного Rich-интерфейса, удобно для Docker/фонового запуска:
+
+```bash
+./run.sh --no-rich --log-file temp/scanner.log
+```
+
 Не пиши просто `run.sh`, а то shell пошлет тебя с `command not found`. Надо именно `./run.sh` или `bash run.sh`.
 
 ### Windows
@@ -145,6 +151,75 @@ python main.py --log-file temp/scanner.log
 ```
 
 `main.py` сам поднимет `.venv`, дотянет зависимости из `requirements.txt` и перезапустится как надо. Руками там особо шаманить не надо.
+
+### Docker
+
+Сборка:
+
+```bash
+docker compose build
+```
+
+Запуск в фоне:
+
+```bash
+docker compose up -d
+```
+
+Логи:
+
+```bash
+docker compose logs -f
+```
+
+Остановка:
+
+```bash
+docker compose down
+```
+
+По умолчанию контейнер запускает:
+
+```bash
+python main.py --no-rich --log-file temp/scanner.log
+```
+
+Так контейнер не рисует полноэкранный Rich в docker logs, а события пишет в `temp/scanner.log`.
+Файл `.env` передаётся через `env_file`, `whitelist.txt` монтируется внутрь контейнера read-only, а `temp/` остаётся на хосте.
+
+Если нужен именно интерактивный экран как на скриншоте:
+
+```bash
+docker compose run --rm selectel-roller python main.py --rich
+```
+
+### Telegram bot
+
+Бот опциональный. Если `TELEGRAM_BOT_TOKEN` пустой, он вообще не включается.
+
+Минимальная настройка в `.env`:
+
+```env
+TELEGRAM_BOT_TOKEN=123456:telegram-token
+TELEGRAM_CHAT_ID=123456789
+```
+
+Если chat id неизвестен: запусти с токеном, напиши боту `/id` или `/start`, он ответит текущим chat id. После этого добавь `TELEGRAM_CHAT_ID` и перезапусти скрипт или контейнер.
+
+Команды:
+
+```text
+/status   вся основная статистика
+/full     расширенная статистика
+/matches  найденные IP из whitelist
+/misses   выдачи вне whitelist по /24
+/events   последние события
+/live 30  одно сообщение, которое редактируется раз в 30 сек
+/stoplive остановить live-сообщение
+/id       показать chat id
+```
+
+По умолчанию бот ничего сам не рассылает: не дублирует логи, не спамит батчами и отвечает только на команды. `/live` тоже не шлёт новые сообщения циклом, а редактирует одно уже отправленное сообщение.
 
 ## Что лежит в проекте
 
